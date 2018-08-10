@@ -1,14 +1,20 @@
 package com.zereao.util;
 
 import com.zereao.chatroom.entry.User;
-import com.zereao.chatroom.server.UserContainer;
+import com.zereao.chatroom.container.UserContainer;
+import com.zereao.chatroom.util.PackageUtil;
 import org.junit.jupiter.api.Test;
 
 /**
  * @author Zereao
  * @version 2018/08/09 23:31
  */
-class TestUtil {
+class BizTestUtil {
+    @Test
+    void test2() {
+        PackageUtil.getAllClassName("com.zereao.chatroom.util");
+    }
+
     @Test
     void test1() {
         UserContainer container = UserContainer.getInstance();

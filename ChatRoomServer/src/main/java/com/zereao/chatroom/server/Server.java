@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,7 +17,7 @@ import java.net.Socket;
 public class Server {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private ServerSocket serverSocket;
+    private ServerSocket serverSocket = null;
 
     public Server() {
         try {
@@ -30,7 +31,7 @@ public class Server {
     public void start() {
         try {
             Socket socket = serverSocket.accept();
-
+            OutputStream os = socket.getOutputStream();
         } catch (IOException e) {
             e.printStackTrace();
         }

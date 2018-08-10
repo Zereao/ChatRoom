@@ -1,4 +1,4 @@
-package com.zereao.chatroom.server;
+package com.zereao.chatroom.container;
 
 import com.zereao.chatroom.entry.User;
 

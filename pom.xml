@@ -17,7 +17,7 @@
     <properties>
         <netty.version>4.1.28.Final</netty.version>
         <junit.version>5.2.0</junit.version>
-        <slf4j.version>1.7.25</slf4j.version>
+        <log4j.version>2.11.1</log4j.version>
     </properties>
 
     <dependencies>
@@ -28,13 +28,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-            <!--<scope>test</scope>-->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
-
-
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
