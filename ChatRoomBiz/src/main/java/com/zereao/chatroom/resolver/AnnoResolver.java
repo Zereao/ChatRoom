@@ -2,6 +2,7 @@ package com.zereao.chatroom.resolver;
 
 import com.zereao.chatroom.annotation.PackageScan;
 import com.zereao.chatroom.annotation.Service;
+import com.zereao.chatroom.container.BeansContainer;
 import com.zereao.chatroom.util.PackageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,45 +20,57 @@ public class AnnoResolver {
     private static final Logger logger = LoggerFactory.getLogger(AnnoResolver.class);
 
     public static void run(Class clz) {
+        AnnoResolver resolver = new AnnoResolver();
         try {
-            PackageScan packageScan = (PackageScan) clz.getAnnotation(PackageScan.class);
-            String packageName = packageScan.value();
-            List<String> classList = ResourceResolver.getAllClassName(packageName);
-            for (String className : classList) {
-                Class cls = Class.forName(className);
-                // 不能实例的类类型
-                boolean isUnInstanceClass = cls.isInterface() || cls.isAnnotation() || cls.isEnum()
-                        || cls.isLocalClass() || cls.isMemberClass() || cls.isAnonymousClass();
-                if (isUnInstanceClass) {
-                    continue;
-                }
-                // 取得其所有的注解，迭代，用于注解扩展
-                Annotation[] annotations = cls.getAnnotations();
-                if (annotations == null || annotations.length < 1) {
-                    continue;
-                }
-                String annoValue = null;
-                for (Annotation annotation : annotations) {
-                    if (annotation instanceof Service) {
-                        Service service = (Service) annotation;
-                        annoValue = service.value();
-                        if (annoValue.trim().length() < 1) {
-                            annoValue = cls.getSimpleName();
-                        }
+            resolver.getAndCacheAllBean(clz);
+        } catch (ClassNotFoundException e) {
+            logger.error(e.getMessage());
+        }
 
+
+    }
+
+    private void getAndCacheAllBean(Class clz) throws ClassNotFoundException {
+        PackageScan packageScan = (PackageScan) clz.getAnnotation(PackageScan.class);
+        String packageName = packageScan.value();
+        List<String> classList = ResourceResolver.getAllClassName(packageName);
+        for (String className : classList) {
+            Class cls = Class.forName(className);
+            // 不能实例的类类型
+            boolean isUnInstanceClass = cls.isInterface() || cls.isAnnotation() || cls.isEnum()
+                    || cls.isLocalClass() || cls.isMemberClass() || cls.isAnonymousClass();
+            if (isUnInstanceClass) {
+                continue;
+            }
+            // 取得其所有的注解，迭代，用于注解扩展
+            Annotation[] annotations = cls.getAnnotations();
+            if (annotations == null || annotations.length < 1) {
+                continue;
+            }
+            String annoValue = null;
+            BeansContainer beansContainer = BeansContainer.getInstance();
+            for (Annotation annotation : annotations) {
+                if (annotation instanceof Service) {
+                    Service service = (Service) annotation;
+                    annoValue = service.value();
+                    if (annoValue.trim().length() < 1) {
+                        annoValue = cls.getSimpleName();
+                    }
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Object obj = cls.getDeclaredConstructor().newInstance();
+                        beansContainer.put(annoValue, obj);
+                    } catch (Exception e) {
+                        logger.error("----->  {} 调用默认无参构造函数失败！\n{}", className, e.getMessage());
                     }
                 }
-                Object obj = null;
-                try {
-                    //noinspection unchecked
-                    obj = cls.getDeclaredConstructor().newInstance();
-                } catch (Exception e) {
-                    logger.error("----->  {} 调用默认无参构造函数失败！\n{}", className, e.getMessage());
-                    continue;
-                }
             }
-        } catch (Exception e) {
-
         }
+    }
+
+
+    private void injectBean(Class clz) {
+        BeansContainer beansContainer = BeansContainer.getInstance();
+
     }
 }
