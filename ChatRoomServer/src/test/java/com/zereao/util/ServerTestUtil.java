@@ -13,6 +13,6 @@ import java.util.List;
 class ServerTestUtil {
     @Test
     void test1() {
-        List<String> a = PackageUtil.getAllClassName("com.zereao.chatroom");
+        List<String> a = PackageUtil.getAllClassName("org.junit.jupiter.api");
     }
 }
