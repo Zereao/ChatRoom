@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class BizTestUtil {
     @Test
     void test2() {
-        PackageUtil.getAllClassName("com.zereao.chatroom.util");
+
     }
 
     @Test

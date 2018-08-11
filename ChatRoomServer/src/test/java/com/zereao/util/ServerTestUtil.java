@@ -13,6 +13,7 @@ import java.util.List;
 class ServerTestUtil {
     @Test
     void test1() {
-        List<String> a = PackageUtil.getAllClassName("org.junit.jupiter.api");
+        System.out.println(
+                ServerTestUtil.class.getSimpleName());
     }
 }

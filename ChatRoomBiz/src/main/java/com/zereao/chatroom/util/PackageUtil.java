@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -22,61 +23,15 @@ public class PackageUtil {
     private static final Logger logger = LoggerFactory.getLogger(PackageUtil.class);
 
     /**
-     * 获取某个包下（包括子包）所有的类的完整名称
-     *
-     * @param packageName 报名
-     * @return 类的完整名称List
-     */
-    public static List<String> getAllClassName(String packageName) {
-        logger.info("=========>  使用默认配置：containChildPackage = true");
-        return getClassName(packageName, true);
-    }
-
-    /**
-     * 获取某个包下的类
-     *
-     * @param packageName           包名
-     * @param isContainChildPackage 是否包含子包
-     * @return 类的完整名称List
-     */
-    public static List<String> getClassName(String packageName, boolean isContainChildPackage) {
-        logger.info("=========>  start!  packageName = {} , isContainChildPackage = {}", packageName, isContainChildPackage);
-        String packagePath = packageName.replace(".", "/");
-        List<String> classList = null;
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        URL url = loader.getResource(packagePath);
-        if (url != null) {
-            String type = url.getProtocol();
-            logger.info("url.getProtocol() --------->  {}", type);
-            if ("file".equals(type)) {
-                classList = getClassNameByFile(url.getPath(), packageName, isContainChildPackage);
-            } else if (("jar").equals(type)) {
-                try {
-                    classList = getClassNameByJar(url.getPath(), packageName, isContainChildPackage);
-                } catch (IOException e) {
-                    logger.info(e.getMessage());
-                }
-
-            }
-        } else {
-
-        }
-
-        return classList;
-    }
-
-
-    /**
      * 从项目文件获取某包下所有类
      *
-     * @param filePath              文件路径
-     * @param packageName           包名
-     * @param isContainChildPackage 是否遍历子包
+     * @param filePath         文件路径
+     * @param icluChildPackage 是否遍历子包
      * @return 类的完整名称
      */
-    private static List<String> getClassNameByFile(String filePath, String packageName, boolean isContainChildPackage) {
-        logger.info("=========>  start!  filePath = {} , packageName = {} , isContainChildPackage = {}",
-                filePath, packageName, isContainChildPackage);
+    public static List<String> getClassNameByFile(String filePath, boolean icluChildPackage) {
+        logger.info("=========>  start!  filePath = {} , icluChildPackage = {}",
+                filePath, icluChildPackage);
         List<String> classList = new ArrayList<>();
         File file = new File(filePath);
         File[] childFiles = file.listFiles();
@@ -85,8 +40,8 @@ public class PackageUtil {
         }
         for (File childFile : childFiles) {
             if (childFile.isDirectory()) {
-                if (isContainChildPackage) {
-                    List<String> tempList = getClassNameByFile(childFile.getPath(), packageName, true);
+                if (icluChildPackage) {
+                    List<String> tempList = getClassNameByFile(childFile.getPath(), true);
                     if (tempList != null && tempList.size() > 0) {
                         classList.addAll(tempList);
                     }
@@ -108,9 +63,9 @@ public class PackageUtil {
         return classList;
     }
 
-    private static List<String> getClassNameByJar(String jarPath, String packageName, boolean isContainChildPackage) throws IOException {
-        logger.info("=========>  start!  jarPath = {} , packageName = {} , isContainChildPackage = {}",
-                jarPath, packageName, isContainChildPackage);
+    public static List<String> getClassNameByJar(String jarPath, boolean icluChildPackage) {
+        logger.info("=========>  start!  jarPath = {} , icluChildPackage = {}",
+                jarPath, icluChildPackage);
         List<String> classList = new ArrayList<>();
         /*
         例如，走到这里时，jarPath =
@@ -128,9 +83,7 @@ public class PackageUtil {
          */
         String packagePath = jarInfo[1].substring(1);
         logger.info("----->   jarFilePath = {} , packagePath = {}", jarFilePath, packagePath);
-        try (
-                JarFile jarFile = new JarFile(jarFilePath);
-        ) {
+        try (JarFile jarFile = new JarFile(jarFilePath)) {
             Enumeration<JarEntry> jarEntrys = jarFile.entries();
             while (jarEntrys.hasMoreElements()) {
                 JarEntry entry = jarEntrys.nextElement();
@@ -153,9 +106,10 @@ public class PackageUtil {
                 String entryName = entry.getName();
                 logger.debug("====== 1 =====>     entryName = {}", entryName);
                 if (entryName.endsWith(".class")) {
-                    if (isContainChildPackage) {
-                        // 筛选出packageName包下的所有类
-                        if (entryName.startsWith(packageName)) {
+                    if (icluChildPackage) {
+                        logger.debug("====== 2 =====>     entryName = {} , packagePath = {}", entryName, packagePath);
+                        // 筛选出packagePath包路径下的所有类
+                        if (entryName.startsWith(packagePath)) {
                             // 经过以下处理，得到className = org.junit.jupiter.api.BeforeAll
                             String className = entryName.replace("/", ".").substring(0, entryName.lastIndexOf("."));
                             classList.add(className);
@@ -164,6 +118,8 @@ public class PackageUtil {
                         int index = entryName.lastIndexOf("/");
                         if (index != -1) {
                             String tempPackagePath = entryName.substring(0, index);
+                            logger.debug("====== 2 =====>     packagePath = {} , tempPackagePath = {}", packagePath, tempPackagePath);
+                            // 只要packagePath下的类，不要packagePath子包下的类
                             if (packagePath.equals(tempPackagePath)) {
                                 String className = entryName.replace("/", ",").substring(0, entryName.lastIndexOf("."));
                                 classList.add(className);
@@ -172,12 +128,30 @@ public class PackageUtil {
                     }
                 }
             }
-
         } catch (IOException e) {
             logger.error("------>   {}", e.getMessage());
-            throw e;
         }
+        return classList;
+    }
 
+    /**
+     * 从当前项目依赖的所有的Jar文件中搜索该包，并获取该包下所有的类
+     *
+     * @param urls             当前URLClassLoader下所有的URL 数组
+     * @param packagePath      包路径
+     * @param icluChildPackage 是否包含子包
+     * @return 类的完整名称List
+     */
+    public static List<String> getClassNameByJars(URL[] urls, String packagePath, boolean icluChildPackage) {
+        List<String> classList = null;
+        if (urls != null) {
+            classList = new ArrayList<>();
+            for (URL url : urls) {
+                String urlPath = url.getPath();
+                String jarPath = urlPath + "!/" + packagePath;
+                classList.addAll(getClassNameByJar(jarPath, icluChildPackage));
+            }
+        }
         return classList;
     }
 }
