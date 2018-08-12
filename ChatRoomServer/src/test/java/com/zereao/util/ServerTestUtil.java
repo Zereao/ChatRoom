@@ -14,6 +14,6 @@ class ServerTestUtil {
     @Test
     void test1() {
         System.out.println(
-                ServerTestUtil.class.getSimpleName());
+                ServerTestUtil.class.getName());
     }
 }

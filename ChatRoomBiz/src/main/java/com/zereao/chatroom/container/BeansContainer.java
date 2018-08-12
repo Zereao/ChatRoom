@@ -19,9 +19,7 @@ public class BeansContainer {
         private BeansContainer singletonContainer;
 
         Singleton() {
-            if (singletonContainer == null) {
-                singletonContainer = new BeansContainer();
-            }
+            singletonContainer = new BeansContainer();
         }
     }
 
@@ -43,7 +41,25 @@ public class BeansContainer {
         return serviceBeansMap.get(name);
     }
 
-    public Set<String> getAllKeys() {
+    public Object getInherit(Class cls) {
+        Object result = null;
+        // 标记，继承关系，应当只有只一个子类/实现类
+        boolean isOnlyOne = true;
+        for (String key : serviceBeansMap.keySet()) {
+            Object obj = serviceBeansMap.get(key);
+            //noinspection unchecked
+            if (cls.isAssignableFrom(obj.getClass())) {
+                if (!isOnlyOne) {
+                    throw new IllegalStateException(cls.getName() + "类/接口 应该只能有一个实现类，容器中查到了多个！");
+                }
+                result = obj;
+                isOnlyOne = false;
+            }
+        }
+        return result;
+    }
+
+    public Set<String> keySet() {
         return serviceBeansMap.keySet();
     }
 
@@ -56,4 +72,16 @@ public class BeansContainer {
         return size;
     }
 
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        String tag = ", ";
+        for (String key : serviceBeansMap.keySet()) {
+            Object obj = serviceBeansMap.get(key);
+            String beanName = obj.getClass().getName();
+            sb.append(tag).append(beanName);
+        }
+        return sb.toString().replaceFirst(tag, "");
+    }
 }

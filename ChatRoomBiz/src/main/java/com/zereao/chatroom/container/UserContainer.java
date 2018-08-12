@@ -26,9 +26,7 @@ public class UserContainer {
         private UserContainer singletonContainer;
 
         Singleton() {
-            if (singletonContainer == null) {
-                singletonContainer = new UserContainer();
-            }
+            singletonContainer = new UserContainer();
         }
     }
 

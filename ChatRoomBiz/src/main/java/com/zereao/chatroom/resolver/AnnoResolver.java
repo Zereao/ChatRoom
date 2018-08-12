@@ -1,13 +1,14 @@
 package com.zereao.chatroom.resolver;
 
+import com.zereao.chatroom.annotation.Autowired;
 import com.zereao.chatroom.annotation.PackageScan;
 import com.zereao.chatroom.annotation.Service;
 import com.zereao.chatroom.container.BeansContainer;
-import com.zereao.chatroom.util.PackageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.List;
 
 /**
@@ -17,23 +18,38 @@ import java.util.List;
  * @version 2018/08/10 22:22
  */
 public class AnnoResolver {
-    private static final Logger logger = LoggerFactory.getLogger(AnnoResolver.class);
+    private final Logger logger = LoggerFactory.getLogger(AnnoResolver.class);
 
+    /**
+     * 入口方法，启动注解解析、Bean的管理等
+     *
+     * @param clz @PackageScan注解标注的类
+     */
     public static void run(Class clz) {
         AnnoResolver resolver = new AnnoResolver();
+        resolver.logger.debug("-----> 开始解析注解...");
         try {
             resolver.getAndCacheAllBean(clz);
         } catch (ClassNotFoundException e) {
-            logger.error(e.getMessage());
+            resolver.logger.error(e.getMessage());
         }
 
-
+        resolver.injectBean();
+        resolver.logger.debug("-----> 注解解析完毕。");
     }
 
+    /**
+     * 处理@PackageScan注解，扫描包，并且将扫到的bean写入容器中
+     *
+     * @param clz @PackageScan注解标注的类
+     * @throws ClassNotFoundException Class.forName()  加载类异常
+     */
     private void getAndCacheAllBean(Class clz) throws ClassNotFoundException {
         PackageScan packageScan = (PackageScan) clz.getAnnotation(PackageScan.class);
         String packageName = packageScan.value();
+        logger.debug("-----> 开始扫描{}包下所有的bean...", packageName);
         List<String> classList = ResourceResolver.getAllClassName(packageName);
+        BeansContainer beansContainer = BeansContainer.getInstance();
         for (String className : classList) {
             Class cls = Class.forName(className);
             // 不能实例的类类型
@@ -48,7 +64,6 @@ public class AnnoResolver {
                 continue;
             }
             String annoValue = null;
-            BeansContainer beansContainer = BeansContainer.getInstance();
             for (Annotation annotation : annotations) {
                 if (annotation instanceof Service) {
                     Service service = (Service) annotation;
@@ -66,11 +81,44 @@ public class AnnoResolver {
                 }
             }
         }
+        logger.debug("-----> bean扫描完毕，并全部写入容器。\n{}", beansContainer.toString());
     }
 
 
-    private void injectBean(Class clz) {
+    private void injectBean() {
+        logger.debug("开始自动注入所有的bean");
         BeansContainer beansContainer = BeansContainer.getInstance();
-
+        for (String key : beansContainer.keySet()) {
+            Object bean = beansContainer.get(key);
+            Field[] fields = bean.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Class beanClass = field.getType();
+                if (beanClass.isPrimitive()) {
+                    continue;
+                }
+                if (field.getAnnotation(Autowired.class) == null) {
+                    continue;
+                }
+                // 这里，不能用field.getName();
+                String fieldName = beanClass.getSimpleName();
+                Object fieldBean = beansContainer.get(fieldName);
+                if (fieldBean != null) {
+                    try {
+                        field.set(bean, fieldBean);
+                    } catch (IllegalAccessException e) {
+                        logger.error("-----> 访问field-【{}】失败!\n{}", fieldName, e.getMessage());
+                    }
+                } else {
+                    // 如果直接找搜索不到这个bean，则尝试着去找该类的子类对应的bean。
+                    try {
+                        Object childBean = beansContainer.getInherit(beanClass);
+                        field.set(bean, childBean);
+                    } catch (Exception e) {
+                        logger.error("-----> 获取{}的子类bean失败！\n{}", bean.getClass().getSimpleName(), e.getMessage());
+                    }
+                }
+            }
+        }
     }
 }

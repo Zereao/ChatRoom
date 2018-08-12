@@ -14,6 +14,7 @@ import java.util.List;
  * @author Zereao
  * @version 2018/08/11 16:45
  */
+@SuppressWarnings("WeakerAccess")
 public class ResourceResolver {
     private static final Logger logger = LoggerFactory.getLogger(ResourceResolver.class);
 
