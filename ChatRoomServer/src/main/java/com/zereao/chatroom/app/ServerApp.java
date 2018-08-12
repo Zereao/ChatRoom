@@ -1,6 +1,7 @@
 package com.zereao.chatroom.app;
 
 import com.zereao.chatroom.annotation.PackageScan;
+import com.zereao.chatroom.resolver.AnnoResolver;
 
 /**
  * 服务启动类
@@ -11,6 +12,9 @@ import com.zereao.chatroom.annotation.PackageScan;
 @PackageScan("com.zereao.service")
 public class ServerApp {
     public static void main(String[] args) {
+        // 启动注解处理器，开始bean的装配
+        AnnoResolver.run(ServerApp.class);
+
 
     }
 }

@@ -2,7 +2,6 @@ package com.zereao.util;
 
 import com.zereao.chatroom.entry.User;
 import com.zereao.chatroom.container.UserContainer;
-import com.zereao.chatroom.util.PackageUtil;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -28,10 +27,10 @@ class BizTestUtil {
         User user2 = user;
 
         System.out.println(container.addUser(user));
-        System.out.println(container.getAllUser());
+        System.out.println(container.keySet());
         System.out.println(container.addUser(user1));
-        System.out.println(container.getAllUser());
+        System.out.println(container.keySet());
         System.out.println(container.addUser(user2));
-        System.out.println(container.getAllUser());
+        System.out.println(container.keySet());
     }
 }

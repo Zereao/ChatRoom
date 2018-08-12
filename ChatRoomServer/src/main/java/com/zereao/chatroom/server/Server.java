@@ -1,11 +1,14 @@
 package com.zereao.chatroom.server;
 
+import com.zereao.chatroom.annotation.AutoBean;
+import com.zereao.chatroom.annotation.Autowired;
+import com.zereao.chatroom.service.ServerService;
 import com.zereao.chatroom.util.PropParseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -14,8 +17,11 @@ import java.net.Socket;
  * @author Zereao
  * @version 2018/08/10 0:03
  */
-public class Server {
+public class Server implements AutoBean {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Autowired
+    private ServerService serverService;
 
     private ServerSocket serverSocket = null;
 
@@ -31,9 +37,10 @@ public class Server {
     public void start() {
         try {
             Socket socket = serverSocket.accept();
-            OutputStream os = socket.getOutputStream();
+            InputStream is = socket.getInputStream();
+            serverService.init(is);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
     }
 }

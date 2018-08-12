@@ -2,8 +2,9 @@ package com.zereao.chatroom.container;
 
 import com.zereao.chatroom.entry.User;
 
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 在线用户Cache，保存用户在线状态的容器
@@ -39,26 +40,30 @@ public class UserContainer {
         return Singleton.INSTANCE.singletonContainer;
     }
 
-
-    private Set<User> userSet = new HashSet<>();
+    private Map<User, ?> userContainer = new ConcurrentHashMap<>();
 
     /**
      * 取得所有在线的用户
      *
      * @return 在线用户Set
      */
-    public Set<User> getAllUser() {
-        return this.userSet;
+    public Set<User> keySet() {
+        return this.userContainer.keySet();
     }
 
     /**
      * 新增一个用户
      *
      * @param user 需要添加的用户对象
-     * @return 是否添加成功 {@link Set#add(Object)}
+     * @return 是否添加成功
      */
-    public synchronized boolean addUser(User user) {
-        return userSet.add(user);
+    public boolean addUser(User user) {
+        if (userContainer.containsKey(user)) {
+            return false;
+        } else {
+            userContainer.put(user, null);
+            return true;
+        }
     }
 }
 
